@@ -2,6 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8" />
+        <link href="/style" rel="stylesheet">
         <title>Plotly</title>
         <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
 
@@ -10,10 +11,7 @@
                             fetch('./plot_update')
                                 .then(function(response) {
                                     response.json().then(function(inner) {
-                                        plot_data[0]['y'][0] = inner.a; 
-                                        plot_data[0]['y'][1] = inner.b; 
-                                        plot_data[0]['y'][2] = inner.c; 
-                                        plot_data[0]['y'][3] = inner.d; 
+                                        plot_data[0]['y'] = inner; 
                                         Plotly.redraw('myDiv');
                                     });
                                 })}
@@ -23,13 +21,17 @@
         <div id='myDiv'></div>
         <script>
             var plot_data = [{
-                         x: ['A', 'B', 'C', 'D'],
-                         y: [0, 1, 2, 3],
-                         type: 'bar'
+                         x: {{ x_array|safe }},
+                         y: {{ y_array }},
+                         type: 'bar',
+                         rangemode: 'nonnegative'
                        }];
 
             Plotly.newPlot('myDiv', plot_data);
             setInterval(updatePlot, 500);
         </script>
+    <p>
+      <a href="/logout" class="inner">Odhlásiť sa.</a>
+    </p>
     </body>
 </html>

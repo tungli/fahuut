@@ -1,24 +1,22 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <title>Login</title>
+    <head>
+        <meta charset="utf-8" />
+        <title>{{ q_id }}</title>
+        <link href="/style" rel="stylesheet">
 </head>
 <body>
+    <h2>
+        {{ question }}
+    </h2>
+    {% for (i, a) in answers %}
     <form action="" method="post">
-        <button name="vote" value="A">A</button>
+        <button class="btn1" name="vote" value={{ i }}>{{ a }}</button>
     </form>
+    {% endfor %}
 
-    <form action="" method="post">
-        <button name="vote" value="B">B</button>
-    </form>
-
-    <form action="" method="post">
-        <button name="vote" value="C">C</button>
-    </form>
-
-    <form action="" method="post">
-        <button name="vote" value="D">D</button>
-    </form>
+    <div>
+        <a href="/{{ q_id }}/results" class="inner">Prejsť na výsledky</a>
+    </div>
 </body>
 </html>

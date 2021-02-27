@@ -1,0 +1,127 @@
+body {
+    width: 800px;
+    margin: 0 auto;
+    background-color: #FFFAFA;
+    padding: 0 20px 20px 20px;
+}
+
+.btn1 {
+    display: flex;
+    border-radius: 10px;
+    background-color: transparent;
+    border: 2px solid #3498db;
+    border: 4px double #cccccc;
+    color: #0c0c0c;
+    text-align: center;
+    font-size: 18px;
+    padding: 20px;
+    width: 800px;
+    transition: all 0.5s;
+    cursor: pointer;
+    margin: 5px;
+}
+.btn1 span {
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+    transition: 0.5s;
+}
+.btn1 span:after {
+    content: '\00bb';
+    position: absolute;
+    opacity: 0;
+    top: 0;
+    right: -20px;
+    transition: 0.5s;
+}
+.btn1:hover {
+    background-color: #3498db;
+}
+.btn1:hover span {
+    padding-right: 25px;
+}
+.btn1:hover span:after {
+    opacity: 1;
+    right: 0;
+}
+
+.btn1 {
+    display: flex;
+    border-radius: 10px;
+    background-color: transparent;
+    border: 2px solid #3498db;
+    border: 4px double #cccccc;
+    color: #0c0c0c;
+    text-align: center;
+    font-size: 18px;
+    padding: 20px;
+    width: 800px;
+    transition: all 0.5s;
+    cursor: pointer;
+    margin: 5px;
+}
+.btn1 span {
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+    transition: 0.5s;
+}
+.btn1 span:after {
+    content: '\00bb';
+    position: absolute;
+    opacity: 0;
+    top: 0;
+    right: -20px;
+    transition: 0.5s;
+}
+.btn1:hover {
+    background-color: #3498db;
+}
+.btn1:hover span {
+    padding-right: 25px;
+}
+.btn1:hover span:after {
+    opacity: 1;
+    right: 0;
+}
+
+.btn2 {
+    background-color: transparent;
+    box-sizing: border-box;
+    border: 2px solid #e74c3c;
+    border-radius: 0.7em;
+    color: #0c0c0c;
+    cursor: pointer;
+    display: flex;
+    align-self: right;
+    text-decoration: none;
+    text-align: center;
+    text-transform: uppercase;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 20px;
+    transition: all 0.5s;
+    margin: 5px;
+    transition: box-shadow 300ms ease-in-out, color 300ms ease-in-out;
+}
+.btn2 span {
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+    transition: 0.5s;
+}
+.btn2:hover {
+    background-color: #e74c3c;
+    box-shadow: 0 0 40px 40px $red inset;
+}
+.btn2:hover span:after {
+    opacity: 1;
+    right: 0;
+}
+
+.inner {
+   display: flex;
+   flex-direction: row;
+   justify-content: center;
+}
