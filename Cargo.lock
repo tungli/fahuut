@@ -772,6 +772,7 @@ dependencies = [
  "futures",
  "ron",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

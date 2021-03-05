@@ -4,19 +4,19 @@
         <meta charset="utf-8" />
         <title>{{ q_id }}</title>
         <link href="/style" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
 </head>
 <body>
     <h2>
         {{ question }}
     </h2>
+    <div>
+        <pre class="prettyprint">{{ info }}</pre>
+    </div>
     {% for (i, a) in answers %}
     <form action="" method="post">
         <button class="btn1" name="vote" value={{ i }}>{{ a }}</button>
     </form>
     {% endfor %}
-
-    <div>
-        <a href="/{{ q_id }}/results" class="inner">Prejsť na výsledky</a>
-    </div>
 </body>
 </html>

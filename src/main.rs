@@ -1,5 +1,4 @@
-// TODO better logs
-// TODO redirect after vote, login
+// TODO add secret check to question additions
 
 use actix_identity::{CookieIdentityPolicy, Identity, IdentityService};
 use actix_web::error::ErrorUnauthorized;
@@ -11,7 +10,7 @@ use env_logger;
 
 use futures::future;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Mutex};
 
 use serde::{Deserialize, Serialize};
 
@@ -19,7 +18,11 @@ use ron;
 use std::fs;
 use std::io::BufReader;
 
-const AUTH_MINUTES: i64 = 1;
+
+use serde_json;
+
+
+const AUTH_EXPIRES_MINUTES: i64 = 120;
 const LETTERS: [char; 31] = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'L', 'M', 'N',
     'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
@@ -57,7 +60,7 @@ impl FromRequest for User {
 type VoteData = Mutex<Vec<Vec<usize>>>;
 type WebVoteData = web::Data<VoteData>;
 
-type WebQuizData = web::Data<Arc<WebQuiz>>;
+type WebQuizData = web::Data<Mutex<WebQuiz>>;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct Login {
@@ -70,6 +73,7 @@ struct LoginTemplate;
 
 async fn login(id: Identity) -> Result<HttpResponse> {
     let s = if let Some(id) = id.identity() {
+        // TODO check expired
         format!("Logged in as {}.", id)
     } else {
         // login form
@@ -88,13 +92,20 @@ struct Vote {
 struct VoteTemplate {
     q_id: usize,
     question: String,
+    info: String,
     answers: Vec<(usize, String)>,
 }
 
 async fn vote_page(q_id: web::Path<usize>, quizes: WebQuizData, id: Identity) -> HttpResponse {
     let q_id = *q_id;
     if let Some(_id) = id.identity() {
+        let quizes = quizes.lock().unwrap();
+        println!("{}", quizes.questions.len());
+        if quizes.questions.len() <= q_id {
+            return HttpResponse::NotFound().finish();
+        }
         let question = quizes.questions[q_id].question.clone();
+        let info = quizes.questions[q_id].info.clone();
         let answers = quizes.questions[q_id].options
             .iter()
             .cloned()
@@ -105,6 +116,7 @@ async fn vote_page(q_id: web::Path<usize>, quizes: WebQuizData, id: Identity) ->
         let document = VoteTemplate { 
             q_id,
             question,
+            info,
             answers,
         }.render().unwrap();
 
@@ -124,6 +136,10 @@ async fn submit_vote(
     if let Some(id) = id.identity() {
         let mut sums = sums.lock().unwrap();
 
+        if sums.len() <= q_id {
+            return HttpResponse::BadRequest().finish();
+        }
+
         let vote = if req.vote < sums[q_id].len() {
             req.vote
         } else {
@@ -134,16 +150,42 @@ async fn submit_vote(
 
         let mut users_data = user_data.lock().unwrap();
         if let Some(user) = users_data.get_mut(&id) {
+            // In case questions were added
+            if user.voted.len() <= q_id {
+                for _i in (user.voted.len() - 1)..q_id {
+                    user.voted.push(None)
+                }
+            }
+
             if let Some(old_vote) = user.voted[q_id] {
                 sums[q_id][old_vote] -= 1;
             }
             user.voted[q_id] = Some(vote);
             sums[q_id][vote] += 1;
         }
-        HttpResponse::NoContent().finish()
+        HttpResponse::SeeOther().header("LOCATION", format!("/{}/results", q_id)).finish()
     } else {
         HttpResponse::Unauthorized().finish()
     }
+}
+
+#[derive(Deserialize)]
+struct AddQuestion {
+    question: Question,
+}
+
+async fn add_question(
+    req: web::Json<AddQuestion>,
+    quiz: WebQuizData,
+    sums: WebVoteData,
+) -> HttpResponse {
+    let new_q = &req.question;
+    let mut quiz = quiz.lock().unwrap();
+    quiz.questions.push(new_q.clone());
+    let mut sums = sums.lock().unwrap();
+    sums.push(vec![0; new_q.options.len()]);
+
+    HttpResponse::Ok().finish()
 }
 
 #[derive(Template)]
@@ -167,11 +209,19 @@ async fn plot_results(
 ) -> HttpResponse {
     if let None = id.identity() {
         HttpResponse::BadRequest().finish()
-    } else {
-        if users.lock().unwrap().get(&id.identity().unwrap()).and_then(|user| user.voted[q_id]).is_none() {
-            return HttpResponse::Ok().content_type("text/html").body(NeedToVoteToSeeResultsTemplate{q_id}.render().unwrap());
-        }
+    } else {&
+        if let Some(user) = users.lock().unwrap().get(&id.identity().unwrap()) {
+            if user.voted[q_id].is_none() {
+                // User tries to bypass the vote
+                return HttpResponse::Ok().content_type("text/html").body(NeedToVoteToSeeResultsTemplate{q_id}.render().unwrap());
+            }
+        } else {
+            // User login is expired probably
+            // TODO return info about logout happening
+            return HttpResponse::SeeOther().header("LOCATION", "/logout").finish();
+        };
 
+        let quizes = quizes.lock().unwrap();
         let n_answers = quizes.questions[q_id].options.len();
         let x: Vec<_> = LETTERS[0..n_answers]
             .iter()
@@ -187,7 +237,7 @@ async fn plot_results(
         .render()
         .unwrap();
         HttpResponse::Ok().content_type("text/html").body(document)
-    }
+    } 
 }
 
 #[derive(Template)]
@@ -209,6 +259,7 @@ async fn new_login(
             .body("Name already in use!")
     } else {
         id.remember(user_name.to_string());
+        let quizes = quizes.lock().unwrap();
         users_data.insert(
             user_name.to_string(),
             User {
@@ -234,7 +285,7 @@ async fn logout(user_data: WebUsersData, sums: WebVoteData, id: Identity) -> Htt
         }
         user_data.remove(&user);
     }
-    HttpResponse::Ok().finish()
+    HttpResponse::SeeOther().header("LOCATION", "/").finish()
 }
 
 async fn plot_update(
@@ -254,9 +305,10 @@ async fn plot_update(
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 struct Question {
     question: String,
+    info: String,
     options: Vec<String>,
 }
 
@@ -300,20 +352,25 @@ async fn main() -> std::io::Result<()> {
     let users_data: WebUsersData = web::Data::new(Mutex::new(HashMap::new()));
     let quizes = WebQuiz::from_ron("test.quiz")?;
     let votes: WebVoteData = web::Data::new(Mutex::new(quizes.make_vote_data()));
-    let quizes = Arc::new(quizes);
+
+    {
+        let q = &quizes.questions[0];
+        println!("{}", serde_json::to_string(q).unwrap());
+    }
+
+    let quizes = web::Data::new(Mutex::new(quizes));
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     HttpServer::new(move || {
         App::new()
-            .data(quizes.clone())
+            .app_data(quizes.clone())
             .app_data(users_data.clone())
             .app_data(votes.clone())
             .wrap(Logger::new("%a %t %r Response: %s"))
             .wrap(IdentityService::new(
-                    //TODO expiration
                 CookieIdentityPolicy::new(&[0; 32])
                     .name("auth-cookie")
-                    .max_age(AUTH_MINUTES * 60) // seconds
+                    .max_age(AUTH_EXPIRES_MINUTES * 60) // seconds
                     .secure(false),
             ))
             .service(web::resource("/style").to(style))
@@ -347,6 +404,11 @@ async fn main() -> std::io::Result<()> {
                 web::resource("{q_id}/plot_update")
                     .guard(guard::Get())
                     .route(web::get().to(plot_update)),
+            )
+            .service(
+                web::resource("/quest_mod")
+                    .guard(guard::Post())
+                    .route(web::post().to(add_question))
             )
     })
     .bind("127.0.0.1:8080")?

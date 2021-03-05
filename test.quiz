@@ -3,6 +3,7 @@ WebQuiz(
         [
             Question(
                 question: "What is the capital of America?",
+                info: "def con(fi):\n\treturn t",
                 options: [ 
                         "America does not have a single capital...  LOL.",
                         "AA",
@@ -12,6 +13,7 @@ WebQuiz(
             ),
             Question(
                 question: "What is the capital of Europe?",
+                info: "def con(fi):\n\treturn t",
                 options: [ 
                         "Europe does not have a single capital...  LOL.",
                         "AA",
