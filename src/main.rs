@@ -391,7 +391,7 @@ async fn style() -> HttpResponse {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let users_data: WebUsersData = web::Data::new(Mutex::new(HashMap::new()));
-    let quizes = WebQuiz::from_ron("test.quiz")?;
+    let quizes = WebQuiz::from_ron("test.quiz.ron")?;
     let votes: WebVoteData = web::Data::new(Mutex::new(quizes.make_vote_data()));
 
     {

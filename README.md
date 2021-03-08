@@ -1,3 +1,3 @@
-F\*\*\* Kahoot!
+Simple web app -- quiz, written using actix-web in Rust.
 
-*Inspired by Kahoot.com*
+I created this is mainly to learn web, actix and practice Rust.
