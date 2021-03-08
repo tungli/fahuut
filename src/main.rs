@@ -27,6 +27,7 @@ const LETTERS: [char; 31] = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'L', 'M', 'N',
     'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
 ];
+const X_HIST_LABEL_MAX_LENGTH: usize = 10;
 
 #[derive(Debug, Clone, Deserialize)]
 struct User {
@@ -71,15 +72,14 @@ struct Login {
 #[template(path = "login.html")]
 struct LoginTemplate;
 
-async fn login(id: Identity) -> Result<HttpResponse> {
-    let s = if let Some(id) = id.identity() {
-        // TODO check expired
-        format!("Logged in as {}.", id)
+async fn login(id: Identity) -> HttpResponse {
+    if id.identity().is_some() {
+        HttpResponse::SeeOther().header("LOCATION", "/logout").finish()
     } else {
-        // login form
-        LoginTemplate.render().unwrap()
-    };
-    Ok(HttpResponse::Ok().content_type("text/html").body(s))
+        HttpResponse::Ok().content_type("text/html").body(
+                LoginTemplate.render().unwrap()
+                )
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -191,8 +191,10 @@ async fn add_question(
 #[derive(Template)]
 #[template(path = "plot_results.html")]
 struct PlotTemplate {
+    q_id: usize,
     x_array: String,
     y_array: String,
+    legend: Vec<String>,
 }
 
 #[derive(Template)]
@@ -222,17 +224,29 @@ async fn plot_results(
         };
 
         let quizes = quizes.lock().unwrap();
-        let n_answers = quizes.questions[q_id].options.len();
+        let options = &quizes.questions[q_id].options;
+        let n_answers = options.len();
+        let mut legend: Vec<String> = Vec::new();
         let x: Vec<_> = LETTERS[0..n_answers]
             .iter()
-            .map(|i| format!("\"{}\"", i))
+            .zip(options.iter())
+            .map(|(letter, full_option)| 
+                if full_option.len() < X_HIST_LABEL_MAX_LENGTH {
+                    format!("\"{}\"", full_option)
+                } else {
+                    legend.push(format!("{}: {}", letter, full_option));
+                    format!("\"{}\"", letter)
+                }
+            )
             .collect();
         let x = x.join(",");
         let y: Vec<_> = (0..n_answers).map(|_i| "0").collect();
         let y = y.join(",");
         let document = PlotTemplate {
+            q_id,
             x_array: format!("[{}]", x),
             y_array: format!("[{}]", y),
+            legend,
         }
         .render()
         .unwrap();
@@ -241,8 +255,30 @@ async fn plot_results(
 }
 
 #[derive(Template)]
-#[template(path = "after_ok_login.html")]
-struct AfterOkLoginTemplate;
+#[template(path = "q_list.html")]
+struct ListQuestionsTemplate {
+    headers: Vec<String>,
+}
+
+async fn list_questions(
+    quizes: WebQuizData,
+    id: Identity,
+) -> HttpResponse {
+    if let None = id.identity() {
+        HttpResponse::BadRequest().finish()
+    } else {
+        let headers = quizes.lock().unwrap()
+            .questions
+            .iter()
+            .map(|q| q.question.clone())
+            .collect();
+        HttpResponse::Ok().content_type("text/html").body(
+            ListQuestionsTemplate{
+                headers,
+            }.render().unwrap())
+    }
+}
+
 
 async fn new_login(
     req: web::Form<Login>,
@@ -269,7 +305,7 @@ async fn new_login(
         );
         println!("New user: {}", user_name);
 
-        HttpResponse::Ok().content_type("text/html").body(AfterOkLoginTemplate{}.render().unwrap())
+        HttpResponse::SeeOther().header("LOCATION", "/list").finish()
     }
 }
 
@@ -409,6 +445,11 @@ async fn main() -> std::io::Result<()> {
                 web::resource("/quest_mod")
                     .guard(guard::Post())
                     .route(web::post().to(add_question))
+            )
+            .service(
+                web::resource("/list")
+                    .guard(guard::Get())
+                    .route(web::get().to(list_questions))
             )
     })
     .bind("127.0.0.1:8080")?

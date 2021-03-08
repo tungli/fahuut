@@ -31,7 +31,22 @@
             setInterval(updatePlot, 500);
         </script>
     <p>
-      <a href="/logout" class="inner">Odhlásiť sa.</a>
+
+    {% if legend.len() > 0 %}
+        {% for i in legend %}
+        <li>{{ i }}</li>
+        {% endfor %}
+    {% endif %}
+    <div class="legend">
+    </div>
+    <div class="next">
+        <form action="/{{ q_id + 1 }}/vote" method="get">
+            <button class="btn2" name="nextbtn">Next</button>
+        </form>
+    </div>
+    <div class="logout">
+        <a href="/logout">Odhlásiť sa.</a>
+    </div>
     </p>
     </body>
 </html>

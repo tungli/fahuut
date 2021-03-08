@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link href="/style" rel="stylesheet">
+  <title>Zoznam</title>
+</head>
+<body>
+    <div class="q_list">
+        {% for h in headers %}
+        <li><a href="/0/vote">{{ h }}</a></li>
+        {% endfor %}
+    </div>
+</body>
+</html>
