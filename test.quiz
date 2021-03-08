@@ -2,15 +2,31 @@ WebQuiz(
     questions:
         [
             Question(
-                question: "Co je hlavni mesto Bruneje?",
-                info: "",
+                question: "Nasledujúci kód:",
+                info: "def f():\n    print('Hello')\n    return None\n    print('world')\n\nf()",
                 options: [ 
-                        "Do haje",
-                        "Varsava",
-                        "Bukurest",
-                        "Ulambatalalalala",
-                        "Zambarsednyy begavan",
+                        "Vypíše 'Hello', a potom 'world'",
+                        "Vypíše len 'Hello'",
+                        "Vypíše 'Hello' pri prvom zavolaní, pri druhom 'world'",
+                    ],
+            ),
+            Question(
+                question: "Je return statement (príkaz) alebo expression (výraz)?",
+                info: "def f():\n    return None",
+                options: [ 
+                        "Statement",
+                        "Expression",
+                    ],
+            ),
+            Question(
+                question: "Nasledujúci kód je chybný, pretože:",
+                info: "def f():\n    p1 = p0 + 1\n    p2 = p1 + 1\n    p3 = p2 + 1\n    p0 = p3\n\np0 = 0\nf()\n\nprint(p0)",
+                options: [ 
+                        "Sme zabudli pridať return do funkcie.",
+                        "Funkcia nemá argumenty.",
+                        "Priraďujeme vo funkcii hodnotu do globálnej premennej.",
                     ],
             ),
         ]
+
 )

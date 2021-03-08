@@ -27,7 +27,7 @@ const LETTERS: [char; 31] = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'L', 'M', 'N',
     'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
 ];
-const X_HIST_LABEL_MAX_LENGTH: usize = 10;
+const X_HIST_LABEL_MAX_LENGTH: usize = 12;
 
 #[derive(Debug, Clone, Deserialize)]
 struct User {
@@ -69,6 +69,10 @@ struct Login {
 }
 
 #[derive(Template)]
+#[template(path = "not_found.html")]
+struct NotFoundTemplate{}
+
+#[derive(Template)]
 #[template(path = "login.html")]
 struct LoginTemplate;
 
@@ -102,7 +106,8 @@ async fn vote_page(q_id: web::Path<usize>, quizes: WebQuizData, id: Identity) ->
         let quizes = quizes.lock().unwrap();
         println!("{}", quizes.questions.len());
         if quizes.questions.len() <= q_id {
-            return HttpResponse::NotFound().finish();
+            let document = NotFoundTemplate{}.render().unwrap(); 
+            return HttpResponse::NotFound().content_type("text/html").body(document.clone());
         }
         let question = quizes.questions[q_id].question.clone();
         let info = quizes.questions[q_id].info.clone();
@@ -452,7 +457,7 @@ async fn main() -> std::io::Result<()> {
                     .route(web::get().to(list_questions))
             )
     })
-    .bind("127.0.0.1:8080")?
+    .bind("0.0.0.0:8080")?
     .run()
     .await
 }
